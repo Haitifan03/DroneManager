@@ -1,9 +1,9 @@
 import json
 import os
-from datetime import datetime
-from datetime import timezone as tz;
 from drone import Drone
 from property_evaluator import PropertyEvaluator
+from epoch_time_manager import epoch_to_iso8601
+from property_data import get_property_data
 
 
 class DataProcessor:
@@ -23,7 +23,7 @@ class DataProcessor:
     @staticmethod
     def main():
         current_dir = os.getcwd()
-        json_file_path = os.path.join(current_dir, "Project", "src", "main", "resources", "TrainingSet-2003-11-28.json")
+        json_file_path = os.path.join(current_dir, "resources", "TrainingSet-2003-11-28.json")
         DataProcessor.process_data(json_file_path)
 
     @staticmethod
@@ -35,11 +35,10 @@ class DataProcessor:
                 json_array = json.load(file)
                 printed_uids = set()
                 uids_set = set()
-                csv_file = os.path.join(os.getcwd(), "Project", "src", "main", "resources", "configurations.csv")
 
                 uid_to_coordinates = {}
 
-                property_data = DataProcessor.get_property_data(csv_file)
+                property_data = get_property_data()
                 for json_object in json_array:
                     uid = json_object[DataProcessor.unique_id]
 
@@ -105,51 +104,33 @@ class DataProcessor:
         alt = float(json_object[DataProcessor.height]) if DataProcessor.height in json_object else 0.0
         rating = float(json_object.get("rating", 0.0))
         epoch = int(json_object[DataProcessor.timeStamp]) if DataProcessor.timeStamp in json_object else 0
-        timestamp = DataProcessor.epoch2019_to_iso8601(epoch)
+        timestamp = epoch_to_iso8601(epoch)
 
         drone = Drone(lat, lon, alt, uid, timestamp, rating)
 
         if uid not in uid_to_coordinates:
-            uid_to_coordinates[uid] = set()
+            uid_to_coordinates[uid] = []
 
-        uid_to_coordinates[uid].add(drone)
+        uid_to_coordinates[uid].append(drone.to_dict())
 
-    @staticmethod
-    def epoch2019_to_iso8601(epoch_time):
-        # Convert to milliseconds by multiplying with 1000
-        cal = datetime.utcfromtimestamp(epoch_time).replace(tzinfo=tz.tzutc())
-        return cal.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     @staticmethod
     def output_unique_points_to_json(uid_to_coordinates):
-        json_array = []
+        json_array = {}
 
         for uid, drone_set in uid_to_coordinates.items():
-            sorted_drone_set = sorted(drone_set, key=lambda x: x.date)
+            sorted_drone_set = sorted(drone_set, key=lambda x: x["date"])
 
-            entry_node = {"unique_id": uid, "drones": sorted_drone_set}
-            json_array.append(entry_node)
+            json_array[uid] = sorted_drone_set
 
-        json_file_path = os.path.join(os.getcwd(), "Project", "src", "main", "resources", "cesiumOutput.json")
+        json_file_path = os.path.join(os.getcwd(), "resources", "cesiumOutput.json")
+
 
         with open(json_file_path, 'w') as file_writer:
-            json.dump(json_array, file_writer, indent=2)
+            # Convert sets to lists before serialization
+            json.dump(json_array, file_writer)
             print("JSON objects written to", json_file_path)
 
-    @staticmethod
-    def get_property_data(output_file_path):
-        properties = []
-
-        try:
-            with open(output_file_path, 'r') as file:
-                for line in file:
-                    values = [int(val.strip()) for val in line.split(",")]
-                    property_evaluator = PropertyEvaluator(values[0], values[1], values[2], values[3], values[4])
-                    properties.append(property_evaluator)
-        except IOError as e:
-            print("Error reading configurations.csv file:", e)
-
-        return properties
 
 if __name__ == "__main__":
     DataProcessor.main()

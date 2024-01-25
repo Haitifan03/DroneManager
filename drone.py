@@ -46,22 +46,3 @@ class Drone:
             data.get("rating"),
         )
 
-# Example Usage:
-latitude = 37.7749
-longitude = -122.4194
-height = 100
-uid = "drone123"
-rating = 4.5
-
-drone1 = Drone(latitude, longitude, height, uid, rating=rating)
-drone2 = Drone(latitude, longitude, height, uid, rating=rating)
-
-print(drone1 == drone2)  # True
-
-# Convert to JSON
-json_data = drone1.to_json()
-print(json_data)
-
-# Convert back to Drone object
-drone_from_json = Drone.from_dict(json.loads(json_data))
-print(drone_from_json.to_dict())

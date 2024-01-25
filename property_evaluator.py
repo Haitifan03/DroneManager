@@ -20,14 +20,3 @@ class PropertyEvaluator:
         return self.property
 
 
-# Example Usage:
-json_data = {
-    "property1": "123.45",
-    "property2": "678.90",
-    # Add other properties as needed
-}
-
-property_evaluator = PropertyEvaluator("property1", 100.0, 200.0, 50.0, 300.0)
-result = property_evaluator.evaluate_property(json_data)
-
-print(result)
