@@ -1,9 +1,9 @@
 import json
 import os
 from drone import Drone
-from property_evaluator import PropertyEvaluator
 from epoch_time_manager import epoch_to_iso8601
-from property_data import get_property_data
+from property_data import DataRater
+from property_reader import getProperties
 
 
 class DataProcessor:
@@ -15,10 +15,6 @@ class DataProcessor:
     height = "geodetic_altitude_meters"
     timeStamp = "epoch2019"
 
-    latitudeProperty = PropertyEvaluator(latitude, -90, 90, -90, 90)
-    longitudeProperty = PropertyEvaluator(longitude, -180, 180, -180, 180)
-    heightProperty = PropertyEvaluator(height, 0, 10000, 0, 10000)
-    timeProperty = PropertyEvaluator(timeStamp, 100000000, float('inf'), 100000000, float('inf'))
 
     @staticmethod
     def main():
@@ -37,18 +33,17 @@ class DataProcessor:
                 uids_set = set()
 
                 uid_to_coordinates = {}
+                properties = getProperties()
+                data_rater = DataRater(properties)
 
-                property_data = get_property_data()
                 for json_object in json_array:
                     uid = json_object[DataProcessor.unique_id]
 
                     uids_set.add(uid)
+                    
+                    json_object["rating"] = data_rater.rate_data(json_object)
 
-                    completeness_valuation = DataProcessor.rate_data_completeness(json_object, property_data)
-                    normalcy_valuation = DataProcessor.rate_data_normalcy(json_object, property_data)
-                    json_object["rating"] = min(normalcy_valuation, completeness_valuation)
-
-                    if DataProcessor.important_values_exist(json_object):
+                    if rater.important_values_exist(json_object):
                         DataProcessor.add_json_object_to_map(json_object, uid_to_coordinates)
                     else:
                         printed_uids.add(uid)
@@ -67,34 +62,7 @@ class DataProcessor:
         logger.addHandler(console_handler)
         return logger
 
-    @staticmethod
-    def important_values_exist(json_object):
-        return (
-            DataProcessor.latitudeProperty.evaluate_property(json_object) > 1 and
-            DataProcessor.longitudeProperty.evaluate_property(json_object) > 1 and
-            DataProcessor.heightProperty.evaluate_property(json_object) > 1 and
-            DataProcessor.timeProperty.evaluate_property(json_object) > 1
-        )
 
-    @staticmethod
-    def rate_data_completeness(json_object, property_data):
-        total = 0
-        total_complete = 0
-        for property_evaluator in property_data:
-            if property_evaluator.evaluate_property(json_object) > 0:
-                total_complete += 1
-            total += 1
-        return total_complete / total
-
-    @staticmethod
-    def rate_data_normalcy(json_object, property_data):
-        normalcy_sum = 0
-        total_complete = 0
-        for property_evaluator in property_data:
-            if property_evaluator.evaluate_property(json_object) > 0:
-                total_complete += 1
-                normalcy_sum += property_evaluator.evaluate_property(json_object)
-        return normalcy_sum / (3.0 * total_complete)
 
     @staticmethod
     def add_json_object_to_map(json_object, uid_to_coordinates):

@@ -1,5 +1,4 @@
 import json
-from datetime import datetime
 
 class Drone:
     def __init__(self, latitude, longitude, height, uid, iso8601date=None, rating=None):
