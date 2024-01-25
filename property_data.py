@@ -1,14 +1,12 @@
-import os
 from property_evaluator import PropertyEvaluator
 
-def DataRater():    
-
+class DataRater():    
     def __init__(self, properties):
         self.property_data = properties
 
     def rate_data(self, json_object):
-        completeness_valuation = rate_data_completeness(json_object)
-        normalcy_valuation = rate_data_normalcy(json_object)
+        completeness_valuation = DataRater.rate_data_completeness(self, json_object)
+        normalcy_valuation = DataRater.rate_data_normalcy(self, json_object)
         return min(normalcy_valuation, completeness_valuation)
     
     def rate_data_completeness(self, json_object):
@@ -42,6 +40,3 @@ def DataRater():
             heightProperty.evaluate_property(json_object) > 1 and
             timeProperty.evaluate_property(json_object) > 1
         )
-    
-rater_data = DataRater()
-

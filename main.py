@@ -43,7 +43,7 @@ class DataProcessor:
                     
                     json_object["rating"] = data_rater.rate_data(json_object)
 
-                    if rater.important_values_exist(json_object):
+                    if data_rater.important_values_exist(json_object):
                         DataProcessor.add_json_object_to_map(json_object, uid_to_coordinates)
                     else:
                         printed_uids.add(uid)
